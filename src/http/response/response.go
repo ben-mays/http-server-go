@@ -4,7 +4,6 @@ import (
   "bytes"
   "fmt"
   "http/types"
-  "net"
 )
 
 type HttpResponse struct {
@@ -41,15 +40,9 @@ func (r *HttpResponse) ToBytes() []byte {
   return buffer.Bytes()
 }
 
-func (r *HttpResponse) Write(conn net.Conn) {
-  // writes the response to the connection
-  conn.Write(r.ToBytes())
-}
-
 func NewCloseResponse(protocol types.HttpProtocol, status types.HttpStatus) HttpResponse {
   headers := []string{"Connection: close"}
-  body := []byte("Closing!")
-  return HttpResponse{protocol, status, headers, body}
+  return HttpResponse{protocol, status, headers, nil}
 }
 
 func NewHttpResponse(protocol types.HttpProtocol, status types.HttpStatus, headers []string, body []byte) HttpResponse {

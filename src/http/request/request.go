@@ -2,6 +2,7 @@ package request
 
 import (
   "bufio"
+  "errors"
   "fmt"
   "http/types"
   "net"
@@ -17,7 +18,7 @@ type HttpRequest struct {
   Body     []byte
 }
 
-func FromConn(conn net.Conn) *HttpRequest {
+func FromConn(conn net.Conn) (*HttpRequest, error) {
   reader := bufio.NewReader(conn)
   scanner := bufio.NewScanner(reader)
 
@@ -27,7 +28,7 @@ func FromConn(conn net.Conn) *HttpRequest {
   requestArr := strings.Split(requestStr, " ") // split it into a []string
 
   if len(requestArr) != 3 {
-    panic("Invalid Request!")
+    return nil, errors.New("Invalid request!")
   }
 
   method := requestArr[0]
@@ -49,7 +50,8 @@ func FromConn(conn net.Conn) *HttpRequest {
 
   if err := scanner.Err(); err != nil {
     fmt.Fprintln(os.Stderr, "Error parsing request", err)
+    return nil, err
   }
 
-  return &HttpRequest{types.NewHttpMethod(method), uri, types.NewHttpProtocol(protocol), headers, body}
+  return &HttpRequest{types.NewHttpMethod(method), uri, types.NewHttpProtocol(protocol), headers, body}, nil
 }
