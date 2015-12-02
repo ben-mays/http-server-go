@@ -1,14 +1,13 @@
-package response
+package http
 
 import (
   "bytes"
   "fmt"
-  "http/types"
 )
 
 type HttpResponse struct {
-  Protocol types.HttpProtocol
-  Status   types.HttpStatus
+  Protocol HttpProtocol
+  Status   HttpStatus
   Headers  []string
   Body     []byte
 }
@@ -32,19 +31,17 @@ func (r *HttpResponse) ToBytes() []byte {
   }
 
   buffer.WriteString("\r\n") // blank line between headers and body
-
   buffer.Write(r.Body)
-  buffer.WriteString("\r\n\r\n")
+  buffer.WriteString("\r\n\r\n") // end the body, then a blank line
 
-  fmt.Println(buffer.String())
   return buffer.Bytes()
 }
 
-func NewCloseResponse(protocol types.HttpProtocol, status types.HttpStatus) HttpResponse {
+func NewCloseResponse(protocol HttpProtocol, status HttpStatus) HttpResponse {
   headers := []string{"Connection: close"}
   return HttpResponse{protocol, status, headers, nil}
 }
 
-func NewHttpResponse(protocol types.HttpProtocol, status types.HttpStatus, headers []string, body []byte) HttpResponse {
+func NewHttpResponse(protocol HttpProtocol, status HttpStatus, headers []string, body []byte) HttpResponse {
   return HttpResponse{protocol, status, headers, body}
 }
