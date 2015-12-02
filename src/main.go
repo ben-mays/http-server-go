@@ -2,10 +2,8 @@ package main
 
 import (
   "fmt"
-  "http/request"
-  "http/response"
-  "http/server"
-  "http/types"
+  "http"
+  HttpServer "http/server"
 )
 
 // func createChunkResponse(data []byte, request *request.HttpRequest) response.HttpResponse {
@@ -27,21 +25,16 @@ import (
 //   // }
 // }
 
-func handler() server.Handler {
-  return func(r request.HttpRequest) (response.HttpResponse, error) {
-    fmt.Println("Received request")
-
-    headers := []string{"Connection: keepalive", "Content-Size: 15"}
-    body := []byte("Here is some data!")
-    response := response.NewHttpResponse(r.Protocol, types.NewHttpStatus(200), headers, body)
-    //sendFile(conn, request)
-    fmt.Println("Finished creating response!")
+func main() {
+  var echoHandler HttpServer.Handler
+  echoHandler = func(r http.HttpRequest) (http.HttpResponse, error) {
+    bodySize := len(r.Body) + 4 // Even an empty body takes up a word
+    contentLength := fmt.Sprintf("Content-Length: %d", bodySize)
+    headers := []string{"Connection: close", "Content-Type: plain/text", contentLength}
+    response := http.NewHttpResponse(r.Protocol, http.Status200, headers, r.Body)
     return response, nil
   }
-}
-
-func main() {
-  server := server.NewServer()
-  server.AddRoute(types.NewHttpMethod("GET"), "*", handler())
-  server.Run(8080)
+  echoServer := HttpServer.NewServer()
+  echoServer.AddRoute(http.POST, "*", echoHandler)
+  echoServer.Run(8080)
 }
