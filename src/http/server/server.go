@@ -90,6 +90,7 @@ func (s *server) process(tcpConn net.Conn) {
       response, err = handler(*request)
       if err == nil {
         _, err = tcpConn.Write(response.ToBytes())
+        fmt.Println("Completed request")
       }
     }
   }

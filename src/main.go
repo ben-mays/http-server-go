@@ -1,40 +1,46 @@
 package main
 
 import (
+  "bufio"
   "fmt"
   "http"
   HttpServer "http/server"
+  "io"
+  "os"
 )
 
-// func createChunkResponse(data []byte, request *request.HttpRequest) response.HttpResponse {
-//   // while not eof, create a response
-//   headers := make([]string, 0)
-//   response := response.NewHttpResponse(request.Protocol, types.NewHttpStatus(200), headers, data)
-//   // create content length
-//   return response
-// }
-
-// func sendFile(request *request.HttpRequest) response.HttpResponse {
-//   // get the file
-//   // file := request.URI
-//   // rdr = reader.open(file, 'r')
-//   // while(!rdr.end()) {
-//   //   buffer := rdr.read(10000) // read 10kB per response
-//   //   response := createChunkResponse(buffer)
-//   //   conn.send(response)
-//   // }
-// }
-
 func main() {
-  var echoHandler HttpServer.Handler
-  echoHandler = func(r http.HttpRequest) (http.HttpResponse, error) {
-    bodySize := len(r.Body) + 4 // Even an empty body takes up a word
-    contentLength := fmt.Sprintf("Content-Length: %d", bodySize)
-    headers := []string{"Connection: close", "Content-Type: plain/text", contentLength}
-    response := http.NewHttpResponse(r.Protocol, http.Status200, headers, r.Body)
-    return response, nil
+  rootDir := "/tmp/files"
+  var sendFileHandler HttpServer.Handler
+  sendFileHandler = func(request http.HttpRequest) (http.HttpResponse, error) {
+    // get the file
+    file := request.URI
+    fmt.Printf("Sending file %s%s\n", rootDir, file)
+    f, ferr := os.Open(fmt.Sprintf("%s%s", rootDir, file))
+    defer f.Close()
+    if ferr != nil {
+      return http.NewCloseResponse(http.Protocol11, http.Status200), ferr
+    }
+
+    // wrap the file with a reader
+    chunksize := 10240 // 10kB chunks
+    reader := bufio.NewReader(f)
+    body := make([]byte, 0)
+    buffer := make([]byte, chunksize)
+
+    for {
+      n, err := reader.Read(buffer) // n is the number of bytes read, can be less than chunksize
+      if err == io.EOF {
+        break
+      }
+      // TODO: Send chunk encoded responses
+      body = append(body, buffer[:n]...) // append buffer[0-n) to the body buffer.
+    }
+    headers := []string{"Connection: close", fmt.Sprintf("Content-Length: %d", len(body)+2)}
+    return http.NewHttpResponse(http.Protocol11, http.Status200, headers, body), nil
   }
-  echoServer := HttpServer.NewServer()
-  echoServer.AddRoute(http.POST, "*", echoHandler)
-  echoServer.Run(8080)
+
+  server := HttpServer.NewServer()
+  server.AddRoute(http.GET, "*", sendFileHandler)
+  server.Run(8080)
 }

@@ -8,8 +8,9 @@ import (
 type HttpResponse struct {
   Protocol HttpProtocol
   Status   HttpStatus
-  Headers  []string
-  Body     []byte
+  // TODO: Use map[string]string
+  Headers []string
+  Body    []byte
 }
 
 func (r *HttpResponse) ToBytes() []byte {
