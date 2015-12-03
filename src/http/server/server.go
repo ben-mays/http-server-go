@@ -14,6 +14,8 @@ type Handler func(HttpRequest) (HttpResponse, error)
 
 // Private to prevent instantiation outside of the package. Can be instantiated using NewServer.
 type server struct {
+
+  // TODO: Improve the routing granularity, using a trie.
   routes map[HttpMethod]map[string]Handler
 }
 
@@ -38,7 +40,7 @@ func (s *server) Route(request HttpRequest) (Handler, error) {
   _, hasMethod := s.routes[request.Method]
   if hasMethod {
     if handler, exist := s.routes[request.Method][request.URI]; exist {
-      fmt.Println("Found route for request.")
+      //fmt.Println("Found route for request.")
       // route exist, return the handler
       return handler, nil
     }
@@ -47,7 +49,7 @@ func (s *server) Route(request HttpRequest) (Handler, error) {
 
     // does a default handler exist? e.g. "*"
     if handler, exist := s.routes[request.Method]["*"]; exist {
-      fmt.Println("Default route found, using.")
+      //fmt.Println("Default route found, using.")
       return handler, nil
     }
   }
@@ -73,6 +75,8 @@ func (s *server) handleError(err error, conn net.Conn) {
 }
 
 // process accepts a net.Conn and parses a HttpRequest, routes the request to a handler, executes the handler, writes a response and then closes the connection.
+// Improvements could be made here:
+//   * Use a chann primitive to keep the tcp connection alive; e.g HTTP pipelining
 func (s *server) process(tcpConn net.Conn) {
   var request *HttpRequest
   var response HttpResponse
@@ -85,11 +89,7 @@ func (s *server) process(tcpConn net.Conn) {
     if err == nil {
       response, err = handler(*request)
       if err == nil {
-        _, err := tcpConn.Write(response.ToBytes())
-        if err == nil {
-          // send a OK, Connection: Close
-          // s.closeConn(tcpConn, request.Protocol, Status200)
-        }
+        _, err = tcpConn.Write(response.ToBytes())
       }
     }
   }

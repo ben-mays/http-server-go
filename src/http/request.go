@@ -12,12 +12,13 @@ type HttpRequest struct {
   Method   HttpMethod
   URI      string
   Protocol HttpProtocol
-  Headers  []string
-  Body     []byte
+  // TODO: Use map[string][string] instead of []string for headers
+  Headers []string
+  Body    []byte
 }
 
+// parse the request line; e.g. GET /path/to/file/index.html HTTP/1.0
 func parseStatusLine(scanner *bufio.Scanner) (HttpMethod, string, HttpProtocol, error) {
-  // parse the request line; e.g. GET /path/to/file/index.html HTTP/1.0
   scanner.Scan()                               // populate the internal buffer
   requestStr := scanner.Text()                 // read the scanner buffer as a string
   requestArr := strings.Split(requestStr, " ") // split it into a []string
@@ -40,6 +41,7 @@ func parseStatusLine(scanner *bufio.Scanner) (HttpMethod, string, HttpProtocol, 
   return method, requestArr[1], protocol, nil
 }
 
+// Parses header text out of a bufio.Scanner, should be called immediately after parseStatusLine.
 func parseHeaders(scanner *bufio.Scanner, method HttpMethod) []string {
   headers := make([]string, 0)
   scanner.Split(bufio.ScanLines)
@@ -56,6 +58,7 @@ func parseHeaders(scanner *bufio.Scanner, method HttpMethod) []string {
   return headers
 }
 
+// Returns the value of the content length header or an error if it doesn't exist.
 func getContentLength(headers []string) (int64, error) {
   contentLengthStr := "Content-Length:"
   for _, header := range headers {
