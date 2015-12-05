@@ -21,9 +21,7 @@ func (r *HttpResponse) ToBytes() []byte {
   //  ...
   //  <HEADER N>\r\n
   //  \r\n
-  //  <BODY BYTES>\r\n
-  //  \r\n
-  //
+  //  <BODY BYTES>
   var buffer bytes.Buffer // using a byte buffer for efficient concatenation
   buffer.WriteString(fmt.Sprintf("%s %s %s\r\n", r.Protocol, r.Status.StatusCode, r.Status.StatusMessage))
 
@@ -32,8 +30,10 @@ func (r *HttpResponse) ToBytes() []byte {
   }
 
   buffer.WriteString("\r\n") // blank line between headers and body
-  buffer.Write(r.Body)
-  buffer.WriteString("\r\n\r\n") // end the body, then a blank line
+
+  if r.Body != nil || len(r.Body) != 0 {
+    buffer.Write(r.Body)
+  }
 
   return buffer.Bytes()
 }
