@@ -23,15 +23,37 @@ Simply define a handler that accepts the HttpRequest type and returns a HttpResp
 
 ```
   rootDir := "/tmp/files"
+  fileTypes := map[string]string{
+    "jpg":  "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png":  "image/png",
+    "html": "text/html",
+    "mp4":  "video/mp4",
+  }
+
   var sendFileHandler HttpServer.Handler
   sendFileHandler = func(request http.HttpRequest) (http.HttpResponse, error) {
     // get the file
     file := request.URI
+    if file == "/" {
+      file = "/index.html"
+    }
+
     fmt.Printf("Sending file %s%s\n", rootDir, file)
     f, ferr := os.Open(fmt.Sprintf("%s%s", rootDir, file))
     defer f.Close()
     if ferr != nil {
       return http.NewCloseResponse(http.Protocol11, http.Status200), ferr
+    }
+
+    // detect content type by parsing the file extension
+    contentType := "application/octet-bytes"
+    if strings.Contains(file, ".") {
+      fileTypeArr := strings.Split(file, ".")
+      fileType := fileTypeArr[len(fileTypeArr)-1]
+      if val, exist := fileTypes[fileType]; exist {
+        contentType = val
+      }
     }
 
     // wrap the file with a reader
@@ -48,7 +70,8 @@ Simply define a handler that accepts the HttpRequest type and returns a HttpResp
       // TODO: Send chunk encoded responses
       body = append(body, buffer[:n]...) // append buffer[0-n) to the body buffer.
     }
-    headers := []string{"Connection: close", fmt.Sprintf("Content-Length: %d", len(body)+2)}
+
+    headers := []string{"Connection: close", fmt.Sprintf("Content-Length: %d", len(body)), fmt.Sprintf("Content-Type: %s", contentType)}
     return http.NewHttpResponse(http.Protocol11, http.Status200, headers, body), nil
   }
 
@@ -97,4 +120,8 @@ Defining a handler is simple; it's just a reference to a function with the heade
 
 # Improvements
 
-Create a mechanism for adding middleware, perhaps adding a generic map to requests for storing data.
+* Create a mechanism for adding middleware, perhaps adding a generic map to requests for storing data.
+* Add CGI support
+** For TB: Create dynamic (use cookies) web app in another language and served via CGI
+
+CGI : Accepts input from ENV vars, forks a binary and returns STDOUT as response
